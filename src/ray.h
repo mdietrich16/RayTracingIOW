@@ -2,17 +2,23 @@
 #define RAYH
 #include "vec3.h"
 
-class ray{
-    public:
+class ray
+{
+public:
     ray() {}
-    ray(const vec3& a, const vec3& b) {A = a; B = b; }
-    vec3 origin() const         { return A; }
-    vec3 direction() const      { return B; }
-    vec3 point_at_parameter(double t) const { return A + t*B; }
+    ray(const point3 &origin, const vec3 &direction)
+        : orig(origin), dir(direction)
+    {
+    }
+    point3 origin() const { return orig; }
+    vec3 direction() const { return dir; }
+    point3 at(double t) const
+    {
+        return orig + t * dir;
+    }
 
-    vec3 A;
-    vec3 B;
-
+    point3 orig;
+    vec3 dir;
 };
 
 #endif

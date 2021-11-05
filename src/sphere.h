@@ -1,43 +1,47 @@
 #ifndef SPHEREH
 #define SPHEREH
 
-#include "hitable.h"
+#include "rtweekend.h"
 
-class sphere: public hitable {
-    public:
-        sphere() {}
-        sphere(vec3 cen, double r, material* mat) : center(cen), radius(r), mat_ptr(mat) {};
-        virtual bool hit(const ray& r, double tmin, double tmax, hit_record& rec) const;
-        vec3 center;
-        double radius;
-        material* mat_ptr;
+#include "hittable.h"
+
+class sphere : public hittable
+{
+public:
+    sphere() {}
+    sphere(point3 cen, double r, shared_ptr<material> mat) : center(cen), radius(r), mat_ptr(mat){};
+    virtual bool hit(const ray &r, double tmin, double tmax, hit_record &rec) const override;
+    point3 center;
+    double radius;
+    shared_ptr<material> mat_ptr;
 };
 
-bool sphere::hit(const ray& r, double t_min, double t_max, hit_record& rec) const {
+bool sphere::hit(const ray &r, double t_min, double t_max, hit_record &rec) const
+{
     vec3 oc = r.origin() - center;
-    double a = dot(r.direction(), r.direction());
-    double b = dot(oc, r.direction());
-    double c = dot(oc, oc) -  radius*radius;
-    double discriminant = b*b - a*c;
-    if (discriminant > 0) {
-        double temp = (-b - sqrt(b*b - a*c))/a;
-        if (temp < t_max && temp > t_min) {
-            rec.mat_ptr = mat_ptr;
-            rec.t = temp;
-            rec.p = r.point_at_parameter(rec.t);
-            rec.normal = (rec.p - center) / radius;
-            return true;
-        }
-        temp = (-b + sqrt(b*b - a*c))/a;
-        if (temp < t_max && temp > t_min) {
-            rec.mat_ptr = mat_ptr;
-            rec.t = temp;
-            rec.p = r.point_at_parameter(rec.t);
-            rec.normal = (rec.p - center) / radius;
-            return true;
+    double a = r.direction().length_squared();
+    double half_b = dot(oc, r.direction());
+    double c = oc.length_squared() - radius * radius;
+    double discriminant = half_b * half_b - a * c;
+    if (discriminant < 0)
+        return false;
+    double sqrtd = sqrt(discriminant);
+    double root = (-half_b - sqrtd) / a;
+    if (root < t_min || root > t_max)
+    {
+        root = (-half_b + sqrtd) / a;
+        if (root < t_min || root > t_max)
+        {
+            return false;
         }
     }
-    return false;
+    rec.mat_ptr = mat_ptr;
+    rec.t = root;
+    rec.p = r.at(rec.t);
+    vec3 outward_normal = (rec.p - center) / radius;
+    rec.set_face_normal(r, outward_normal);
+    //rec.normal = (rec.p - center) / radius;
+    return true;
 }
 
 #endif
