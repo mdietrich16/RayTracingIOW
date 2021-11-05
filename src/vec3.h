@@ -167,17 +167,14 @@ vec3 refract(const vec3 &v, const vec3 &n, double ni_over_nt)
     vec3 r_out_perp = ni_over_nt * (v + cos_theta*n);
     vec3 r_out_parallel = -sqrt(fabs(1.0 - r_out_perp.length_squared())) * n;
     return r_out_perp + r_out_parallel;
+}
 
-    // point3 uv = unit_vector(v);
-    // double dt = dot(uv, n);
-    // double discriminant = 1.0 - ni_over_nt * ni_over_nt * (1 - dt * dt);
-    // if (discriminant > 0)
-    // {
-    //     refracted = ni_over_nt * (uv - n * dt) - n * sqrt(discriminant);
-    //     return true;
-    // }
-    // else
-    //     return false;
+vec3 random_in_unit_disk() {
+    while(true) {
+        auto p = vec3(random_double(-1, 1), random_double(-1, 1), 0);
+        if(p.length_squared() >= 1) continue;
+        return p;
+    }
 }
 
 #endif
