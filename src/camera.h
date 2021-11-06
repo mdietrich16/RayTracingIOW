@@ -13,7 +13,9 @@ public:
         double vfov,//vfov is top to bottom in degrees
         double aspect_ratio,
         double aperture,
-        double focus_dist)
+        double focus_dist,
+        double time0,
+        double time1)
     {
         double theta = deegrees_to_radians(vfov);
         double h = tan(theta / 2);
@@ -29,6 +31,8 @@ public:
         vertical = focus_dist * viewport_height * v;
         upper_left_corner = origin - horizontal/2 - vertical/2 - focus_dist * w;
         lens_radius = aperture/2;
+        tm0 = time0;
+        tm1 = time1;
     }
     ray get_ray(double s, double t) {
         vec3 rd = lens_radius * random_in_unit_disk();
@@ -36,7 +40,8 @@ public:
 
         return ray(
             origin + offset,
-            upper_left_corner + s*horizontal + t*vertical - origin - offset
+            upper_left_corner + s*horizontal + t*vertical - origin - offset,
+            random_double(tm0, tm1)
         );
     }
 
@@ -47,6 +52,7 @@ private:
     vec3 vertical;
     vec3 u, v, w;
     double lens_radius;
+    double tm0, tm1; // Shutter open/close times
 };
 
 #endif
