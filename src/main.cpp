@@ -7,6 +7,7 @@
 #include "sphere.h"
 #include "moving_sphere.h"
 #include "hittable_list.h"
+#include "bvh.h"
 #include "camera.h"
 #include "color.h"
 #include "material.h"
@@ -44,13 +45,12 @@ hittable_list random_scene() {
             if((center - point3(4, 0.2, 0)).length() > 0.9) {
                 shared_ptr<material> sphere_material;
             
-                if(choose_mat < 0.8) {
+                if(choose_mat < 0.5) {
                     // diffuse
                     auto albedo = color::random() * color::random();
                     sphere_material = make_shared<lambertian>(albedo);
-                    auto center2 = center + vec3(0, random_double(0, 0.5), 0);
-                    world.add(make_shared<moving_sphere>(center, center2, 0.0, 1.0, 0.2, sphere_material));
-                } else if(choose_mat < 0.95) {
+                    world.add(make_shared<sphere>(center, 0.2, sphere_material));
+                } else if(choose_mat < 0.7) {
                     // metal
                     auto albedo = color::random() * color::random();
                     auto fuzz = random_double(0, 0.5);
@@ -73,7 +73,7 @@ hittable_list random_scene() {
     auto material3 = make_shared<metal>(color(0.7, 0.6, 0.5), 0.0);
     world.add(make_shared<sphere>(point3(4, 1, 0), 1.0, material3));
 
-    return world;
+    return hittable_list(make_shared<bvh_node>(world, 0.0, 1.0));
 }
 
 int main()
@@ -81,10 +81,10 @@ int main()
     // Define Image
 
     const auto aspect_ratio = 16.0 / 9.0;
-    const int image_width = 400;
+    const int image_width = 1920;
     const int image_height = static_cast<int>(image_width / aspect_ratio);
     const int total = image_width * image_height;
-    const int samples = 100;
+    const int samples = 200;
     const int max_depth = 50;
     uint8_t image_data[total * 3];
 
