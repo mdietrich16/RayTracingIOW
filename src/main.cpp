@@ -37,8 +37,8 @@ color ray_color(const ray &r, const hittable &world, int depth)
 hittable_list random_scene() {
     hittable_list world;
 
-    auto ground_material = make_shared<lambertian>(color(0.3, 0.5, 0.6));
-    world.add(make_shared<sphere>(point3(0, -1000, 0), 1000, ground_material));
+    auto checker = make_shared<checker_texture>(color(0.2, 0.3, 0.1), color(0.9, 0.9, 0.9));
+    world.add(make_shared<sphere>(point3(0, -1000, 0), 1000, make_shared<lambertian>(checker)));
     
     float matte_prob = random_double(0.0, 0.8);
     float metal_prob = random_double(0.0, 1.0);
@@ -71,9 +71,10 @@ hittable_list random_scene() {
                 } else {
                     // glass
                     sphere_material = make_shared<dielectric>(1.5);
-                    //Make half of the spheres hollow
-                    if(random_double(0.0, 1.0) < 0.5)
-                        world.add(make_shared<sphere>(center, -0.95*radius, sphere_material));
+                    //Make half of the spheres hollow -- Don't work because of BVH
+                    // if(random_double(0.0, 1.0) < 0.5) {
+                    //     std::cout << "Made hollow sphere" << std::endl;
+                    // }
                     world.add(make_shared<sphere>(center, radius, sphere_material));
                 }
             }
@@ -81,6 +82,8 @@ hittable_list random_scene() {
     }
     auto material = make_shared<dielectric>(1.5);
     world.add(make_shared<sphere>(point3(0, 1, 0), 1.0, material));
+    // Hollow spheres don't work because of BVH?
+    //world.add(make_shared<sphere>(point3(0, 1, 0), -0.9, material));
 
     auto material2 = make_shared<lambertian>(color(0.4, 0.2, 0.1));
     world.add(make_shared<sphere>(point3(-4, 1, 0), 1.0, material2));
@@ -91,7 +94,30 @@ hittable_list random_scene() {
     return hittable_list(make_shared<bvh_node>(world, 0.0, 1.0));
 }
 
-hittable_list threeSphereScene() {
+hittable_list two_spheres() {
+    hittable_list objects;
+
+    auto checker = make_shared<checker_texture>(color(0.2, 0.3, 0.1), color(0.9, 0.9, 0.9));
+    objects.add(make_shared<sphere>(point3(0, -10, 0), 10, make_shared<lambertian>(checker)));
+    objects.add(make_shared<sphere>(point3(0,  10, 0), 10, make_shared<lambertian>(checker)));
+    
+    return objects;
+}
+
+hittable_list two_perlin_spheres() {
+    hittable_list objects;
+
+    auto pertext = make_shared<noise_texture>(4);
+    auto turbtext = make_shared<turb_noise_texture>(4);
+    auto marbletext = make_shared<marble_texture>(4);
+    objects.add(make_shared<sphere>(point3(0, -1000,  0), 1000, make_shared<lambertian>(pertext)));
+    objects.add(make_shared<sphere>(point3(0,     2, -2),    2, make_shared<lambertian>(turbtext)));
+    objects.add(make_shared<sphere>(point3(0,     2,  2),    2, make_shared<lambertian>(marbletext)));
+    
+    return objects;
+}
+
+hittable_list three_spheres() {
     hittable_list world;
     
     auto material_ground = make_shared<lambertian>(color(0.8, 0.8, 0.0));
@@ -152,7 +178,9 @@ int main(int argc, char *argv[])
         return 0;
     }
     
-    srand(time(0));
+    time_t seed = time(0);
+    std::cout << "Using seed " << seed << " for RNG." << std::endl;
+    srand(seed);
 
     const auto aspect_ratio = opts.aspect_ratio;
     const int image_width = opts.image_width;
@@ -163,32 +191,52 @@ int main(int argc, char *argv[])
     const int max_depth = 50;
     uint8_t image_data[total * 3];
 
-    // Define scene
+    // Define scene and camera from arguments
+
+    point3 lookfrom;
+    point3 lookat;
+    double aperture = 0.0;
+    double vfov = 40.0;
     
     hittable_list world;
     switch (opts.scene)
     {
     case 0:
         world = random_scene();
+        lookfrom = point3(13, 2, 3);
+        lookat = point3(0, 0, 0);
+        vfov = 20;
+        aperture = 0.1;
         break;
     
     case 1:
-        world = threeSphereScene();
+        world = three_spheres();
+        lookfrom = point3(0, 1, 1);
+        lookat = point3(0, 0, 0);
+        vfov = 20;
         break;
     
     default:
-        std::cout << "Specified non-existent scene. Using scene 0." << std::endl;
-        world = random_scene();
+        std::cout << "Specified non-existent scene. Using scene 2." << std::endl;
+    case 2:
+        world = two_spheres();
+        lookfrom = point3(13, 2, 3);
+        lookat = point3(0, 0, 0);
+        vfov = 20;
+        break;
+
+    case 3:
+        world = two_perlin_spheres();
+        lookfrom = point3(13, 2, 3);
+        lookat = point3(0, 0, 0);
+        vfov = 20;
         break;
     }
 
     // Camera
 
-    point3 lookfrom(8, 5, 5);
-    point3 lookat(0, 0, 0);
     vec3 vup(0, 1, 0);
     double dist_to_focus = 10.;
-    double aperture = 0.05;
     camera cam(lookfrom, lookat, vup, 30, aspect_ratio, aperture, dist_to_focus, 0.0, 1.0);
     
     // Create threads
