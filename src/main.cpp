@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
     const int samples = opts.samples_per_pixel;
     const int samples_per_thread = static_cast<int>(samples/opts.cores);
     const int max_depth = 50;
-    uint8_t image_data[total * 3];
+    uint8_t* image_data = new uint8_t[total * 3];
 
     // Define scene and camera from arguments
 
@@ -261,7 +261,6 @@ int main(int argc, char *argv[])
     
     write_color(image_data, image_width, image_height, samples, pixel_colors);
 
-    char c[opts.filename.size() + 1];
     stbi_write_jpg(opts.filename.c_str(), image_width, image_height, 3, image_data, 100);
     std::cout << "Done.                                   \n";
     return 0;
