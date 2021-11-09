@@ -8,6 +8,7 @@
 
 struct options_rec {
     bool render;
+    uint64_t seed;
     int scene;
     int cores;
     float aspect_ratio;
@@ -28,11 +29,13 @@ static void show_usage(std::string name)
               << "\t-x,--width WIDTH\t\tSpecify the width of the image\n"
               << "\t-y,--height HEIGHT\t\tSpecify the height of the image. If this is set, aspect ratio is silently ignored!\n"
               << "\t-f,--file STRING\t\tSpecify the filename to store the image into\n"
+              << "\t-r,--seed SEED\t\tSpecify the seed for the RNG\n"
               << "\t-s,--scene SCENE\t\tSpecify the scene by integer ID"
               << std::endl;
 }   
 
 bool parseArguments(int argc, char *argv[], options_rec &options) {
+    options.seed = time(0);
     options.render = false;
     options.aspect_ratio = 16.0/9.0;
     options.image_width = 480;
@@ -58,6 +61,13 @@ bool parseArguments(int argc, char *argv[], options_rec &options) {
             if(i + 1 < argc) {
                 int scene = atoi(argv[++i]);
                 options.scene = scene < 0 ? 0 : scene;
+            } else {
+                show_usage(argv[0]);
+                return false;
+            }
+        } else if((arg == "-r") || (arg == "--seed")) {
+            if(i + 1 < argc) {
+                options.seed = atoi(argv[++i]);
             } else {
                 show_usage(argv[0]);
                 return false;

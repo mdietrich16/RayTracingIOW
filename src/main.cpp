@@ -134,8 +134,9 @@ hittable_list three_spheres() {
     return hittable_list(make_shared<bvh_node>(world, 0.0, 1.0));
 }
 
-void render(int image_height, int image_width, int samples, camera *cam, hittable_list *world, int max_depth, int total, std::vector<color>* image_data) {
+void render(int seed, int image_height, int image_width, int samples, camera *cam, hittable_list *world, int max_depth, int total, std::vector<color>* image_data) {
     
+    srand(seed);
     for (int j = 0; j < image_height; j++)
     {
         for (int i = 0; i < image_width; i++)
@@ -178,9 +179,9 @@ int main(int argc, char *argv[])
         return 0;
     }
     
-    time_t seed = time(0);
-    std::cout << "Using seed " << seed << " for RNG." << std::endl;
-    srand(seed);
+
+    std::cout << "Using baseseed " << opts.seed << " for RNG." << std::endl;
+    srand(opts.seed);
 
     const auto aspect_ratio = opts.aspect_ratio;
     const int image_width = opts.image_width;
@@ -244,7 +245,7 @@ int main(int argc, char *argv[])
     std::vector<std::thread> threads;
     std::vector<std::vector<color>> data_arrays = std::vector<std::vector<color>>(opts.cores, std::vector<color>(total));
     for (int i = 0; i < opts.cores; i++) {
-        threads.push_back(std::thread(render, image_height, image_width, samples_per_thread, &cam, &world, max_depth, total, &(data_arrays[i])));
+        threads.push_back(std::thread(render, opts.seed + i, image_height, image_width, samples_per_thread, &cam, &world, max_depth, total, &(data_arrays[i])));
     }
     
     std::vector<color> pixel_colors(total);
