@@ -1,4 +1,6 @@
 bin/*
+*.exe
 *.ppm
 *.json
 *.jpg
+*.bmp

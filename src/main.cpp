@@ -284,7 +284,7 @@ int main(int argc, char *argv[])
     
     write_color(image_data, image_width, image_height, real_samples, pixel_colors);
 
-    stbi_write_jpg(opts.filename.c_str(), image_width, image_height, 3, image_data, 100);
+    stbi_write_bmp(opts.filename.c_str(), image_width, image_height, 3, image_data);
 
     std::chrono::time_point end_time = std::chrono::high_resolution_clock::now();
     std::chrono::duration elapsed = (end_time - start_time);
