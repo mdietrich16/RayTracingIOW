@@ -1,6 +1,8 @@
 #include <iostream>
+#include <iomanip>
 #include <thread>
 #include <future>
+#include <atomic>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
@@ -134,8 +136,9 @@ hittable_list three_spheres() {
     return hittable_list(make_shared<bvh_node>(world, 0.0, 1.0));
 }
 
-void render(int seed, int image_height, int image_width, int samples, camera *cam, hittable_list *world, int max_depth, int total, std::vector<color>* image_data) {
+void render(int seed, int image_height, int image_width, int samples, camera *cam, hittable_list *world, int max_depth, int total, std::atomic<int>* alive_count, std::atomic<int>* finished_pixel_parts,  std::vector<color>* image_data) {
     
+    (*alive_count)++;
     srand(seed);
     for (int j = 0; j < image_height; j++)
     {
@@ -156,11 +159,10 @@ void render(int seed, int image_height, int image_width, int samples, camera *ca
             // Store color data
             image_data->at(index) = col;
             
-            // Print progress message
-            //std::cout << "Progress: " << j * image_width + i << "/" << total << " - " << 100 * double(j * image_width + i) / total << "%\r";
+            (*finished_pixel_parts)++;
         }
     }
-
+    (*alive_count)--;
 }
 
 int main(int argc, char *argv[])
@@ -178,6 +180,8 @@ int main(int argc, char *argv[])
         std::cout << "Not rendering!" << std::endl;
         return 0;
     }
+
+    std::cout << "Rendering a " << opts.image_width << "x" << opts.image_height << " image of scene " << opts.scene << " in file " << opts.filename << std::endl;
     
 
     std::cout << "Using baseseed " << opts.seed << " for RNG." << std::endl;
@@ -188,9 +192,13 @@ int main(int argc, char *argv[])
     const int image_height = opts.image_height;
     const int total = image_width * image_height;
     const int samples = opts.samples_per_pixel;
-    const int samples_per_thread = static_cast<int>(samples/opts.cores);
+    const float thread_count = opts.cores;
+    const int samples_per_thread = static_cast<int>(ceil(float(samples)/thread_count));
+    const int real_samples = samples_per_thread*opts.cores;
     const int max_depth = 50;
     uint8_t* image_data = new uint8_t[total * 3];
+  
+    std::cout << "Computing " << samples_per_thread << " rays on " << opts.cores << " core(s) for a total of " << real_samples << " rays per pixel or " << real_samples*total << " total rays." << std::endl;
 
     // Define scene and camera from arguments
 
@@ -240,12 +248,27 @@ int main(int argc, char *argv[])
     double dist_to_focus = 10.;
     camera cam(lookfrom, lookat, vup, 30, aspect_ratio, aperture, dist_to_focus, 0.0, 1.0);
     
+    // Time-keeping and stats
+    
+    std::chrono::time_point start_time = std::chrono::high_resolution_clock::now();
+    std::atomic<int> finished_pixel_parts = 0;
+    std::atomic<int> alive_count = 0;
+
     // Create threads
 
     std::vector<std::thread> threads;
     std::vector<std::vector<color>> data_arrays = std::vector<std::vector<color>>(opts.cores, std::vector<color>(total));
     for (int i = 0; i < opts.cores; i++) {
-        threads.push_back(std::thread(render, opts.seed + i, image_height, image_width, samples_per_thread, &cam, &world, max_depth, total, &(data_arrays[i])));
+        threads.push_back(std::thread(render, opts.seed + i, image_height, image_width, samples_per_thread, &cam, &world, max_depth, total, &alive_count, &finished_pixel_parts, &(data_arrays[i])));
+    }
+    
+    float progress = 0.f;
+    int str_width = static_cast<int>(ceil(log10(total)));
+    while(alive_count > 0) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        // Print progress message
+        progress = float(finished_pixel_parts)/thread_count;
+        std::cout << "Progress: " << std::fixed << std::setw(str_width) << std::setprecision(0) << progress << "/" << total << " - " << std::fixed << std::setprecision(1) << std::setw(5) << 100.f * progress / total << "%\r";
     }
     
     std::vector<color> pixel_colors(total);
@@ -259,9 +282,18 @@ int main(int argc, char *argv[])
         }
     }
     
-    write_color(image_data, image_width, image_height, samples, pixel_colors);
+    write_color(image_data, image_width, image_height, real_samples, pixel_colors);
 
     stbi_write_jpg(opts.filename.c_str(), image_width, image_height, 3, image_data, 100);
-    std::cout << "Done.                                   \n";
+
+    std::chrono::time_point end_time = std::chrono::high_resolution_clock::now();
+    std::chrono::duration elapsed = (end_time - start_time);
+    const int elapsed_sec = std::chrono::duration_cast<std::chrono::seconds>(elapsed).count();
+    std::cout << std::endl << "Done. Took " << elapsed_sec << " seconds." << std::endl;
+    std::cout << "That means:" << std::endl;
+    std::cout << std::scientific << std::setprecision(2) << float(total*real_samples)/elapsed_sec << " rays/sec" << std::endl;
+    std::cout << std::scientific << std::setprecision(2) << (elapsed_sec)/(total*real_samples) << " sec/ray" << std::endl;
+
+    delete[] image_data;
     return 0;
 }
