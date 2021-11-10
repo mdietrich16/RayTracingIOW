@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
     const int real_samples = samples_per_thread*opts.cores;
     const int max_depth = 50;
     uint8_t* image_data = new uint8_t[total * 3];
-
+  
     std::cout << "Computing " << samples_per_thread << " rays on " << opts.cores << " core(s) for a total of " << real_samples << " rays per pixel or " << real_samples*total << " total rays." << std::endl;
 
     // Define scene and camera from arguments
