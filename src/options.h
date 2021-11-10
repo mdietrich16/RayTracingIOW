@@ -23,14 +23,14 @@ static void show_usage(std::string name)
     std::cerr << "Usage: " << name << " <option(s)> [SCENE]"
               << "Options:\n"
               << "\t-h,--help\t\t\tShow this help message\n"
-              << "\t-c,--core NUMBER\t\tSpecify the number of cores for multithreading\n"
-              << "\t-n,--samples NUMBER\t\tSpecify the number of rays to cast per pixel\n"
-              << "\t-a,--aspect,--ratio NUMBER\tSpecify the aspect ratio for the image\n"
-              << "\t-x,--width WIDTH\t\tSpecify the width of the image\n"
-              << "\t-y,--height HEIGHT\t\tSpecify the height of the image. If this is set, aspect ratio is silently ignored!\n"
-              << "\t-f,--file STRING\t\tSpecify the filename to store the image into\n"
-              << "\t-r,--seed SEED\t\tSpecify the seed for the RNG\n"
-              << "\t-s,--scene SCENE\t\tSpecify the scene by integer ID"
+              << "\t-c,--core NUMBER\t\tSpecify the number of cores for multithreading. Defaults to all your threads.\n"
+              << "\t-n,--samples NUMBER\t\tSpecify the number of rays to cast per pixel. Defaults to 40.\n"
+              << "\t-a,--aspect,--ratio NUMBER\tSpecify the aspect ratio for the image. Defaults to 16/9.\n"
+              << "\t-x,--width WIDTH\t\tSpecify the width of the image. Defaults to 480.\n"
+              << "\t-y,--height HEIGHT\t\tSpecify the height of the image. Defaults to 270.\n\t\t\t\t\tIf this is set, aspect ratio is silently ignored!\n"
+              << "\t-f,--file STRING\t\tSpecify the filename to store the image into. Defaults to 'out.jpg'.\n"
+              << "\t-r,--seed SEED\t\t\tSpecify the seed for the RNG. Defaults to unix-time.\n"
+              << "\t-s,--scene SCENE\t\tSpecify the scene by integer ID. Defaults to something hardcoded."
               << std::endl;
 }   
 
@@ -39,10 +39,11 @@ bool parseArguments(int argc, char *argv[], options_rec &options) {
     options.render = false;
     options.aspect_ratio = 16.0/9.0;
     options.image_width = 480;
-    options.cores = 1;
+    options.cores = std::thread::hardware_concurrency();
+    options.cores = options.cores < 1 ? 1 : options.cores;
     options.scene = 0;
-    options.samples_per_pixel = 100;
-    options.filename = "pic.jpg";
+    options.samples_per_pixel = 40;
+    options.filename = "out.jpg";
     
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
@@ -122,7 +123,6 @@ bool parseArguments(int argc, char *argv[], options_rec &options) {
         options.image_height = static_cast<int>(options.image_width / options.aspect_ratio);
     }
     
-    std::cout << "Rendering a " << options.image_width << "x" << options.image_height << " image of scene " << options.scene << " on " << options.cores << " core(s) in file " << options.filename << std::endl;
     options.render = true;
     return true;
 }
