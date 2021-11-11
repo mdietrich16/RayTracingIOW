@@ -28,7 +28,7 @@ static void show_usage(std::string name)
               << "\t-a,--aspect,--ratio NUMBER\tSpecify the aspect ratio for the image. Defaults to 16/9.\n"
               << "\t-x,--width WIDTH\t\tSpecify the width of the image. Defaults to 480.\n"
               << "\t-y,--height HEIGHT\t\tSpecify the height of the image. Defaults to 270.\n\t\t\t\t\tIf this is set, aspect ratio is silently ignored!\n"
-              << "\t-f,--file STRING\t\tSpecify the filename to store the image into. Defaults to 'out.jpg'.\n"
+              << "\t-f,--file STRING\t\tSpecify the filename to store the image into. Defaults to 'out.bmp'.\n"
               << "\t-r,--seed SEED\t\t\tSpecify the seed for the RNG. Defaults to unix-time.\n"
               << "\t-s,--scene SCENE\t\tSpecify the scene by integer ID. Defaults to something hardcoded."
               << std::endl;
@@ -43,7 +43,7 @@ bool parseArguments(int argc, char *argv[], options_rec &options) {
     options.cores = options.cores < 1 ? 1 : options.cores;
     options.scene = 0;
     options.samples_per_pixel = 40;
-    options.filename = "out.jpg";
+    options.filename = "out.bmp";
     
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];

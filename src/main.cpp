@@ -17,12 +17,17 @@
 #include "material.h"
 #include "options.h"
 
+//#define SKYBOX_OLD
+
+#ifdef SKYBOX_OLD
 color ray_color(const ray &r, const hittable &world, int depth)
 {
     hit_record rec;
 
+    // If we've exceeded the ray bounce limit, no more light is gathered.
     if (depth <= 0)
         return color(0.0, 0.0, 0.0);
+    
     if (world.hit(r, 0.001, infinity, rec))
     {
         ray scattered;
@@ -34,6 +39,29 @@ color ray_color(const ray &r, const hittable &world, int depth)
     vec3 unit_direction = unit_vector(r.direction());
     double t = 0.5 * (unit_direction.y() + 1.0);
     return (1.0 - t) * color(1.0, 1.0, 1.0) + t * color(0.5, 0.7, 1.0);
+#else
+color ray_color(const ray &r, const color& background, const hittable &world, int depth)
+{
+    hit_record rec;
+
+    // If we've exceeded the ray bounce limit, no more light is gathered.
+    if (depth <= 0)
+        return color(0.0, 0.0, 0.0);
+    
+    // If the ray hits nothing, return the background color.
+    if(!world.hit(r, 0.001, infinity, rec))
+        return background;
+
+    ray scattered;
+    color attenuation;
+    color emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
+
+    if (!rec.mat_ptr->scatter(r, rec, attenuation, scattered))
+        return emitted;
+
+    return emitted + attenuation * ray_color(scattered, background, world, depth - 1);
+    
+#endif
 }
 
 hittable_list random_scene() {
@@ -144,7 +172,7 @@ hittable_list earth() {
     return hittable_list(globe);
 }
 
-void render(int seed, int image_height, int image_width, int samples, camera *cam, hittable_list *world, int max_depth, int total, std::atomic<int>* alive_count, std::atomic<int>* finished_pixel_parts,  std::vector<color>* image_data) {
+void render(int seed, int image_height, int image_width, int samples, camera *cam, hittable_list *world, const color* background, int max_depth, int total, std::atomic<int>* alive_count, std::atomic<int>* finished_pixel_parts,  std::vector<color>* image_data) {
     
     (*alive_count)++;
     srand(seed);
@@ -159,8 +187,11 @@ void render(int seed, int image_height, int image_width, int samples, camera *ca
                 double u = double(i + random_double()) / (image_width - 1);
                 double v = double(j + random_double()) / (image_height - 1);
                 ray r = cam->get_ray(u, v);
-
+#ifdef SKYBOX_OLD
                 col += ray_color(r, *world, max_depth);
+#else
+                col += ray_color(r, *background, *world, max_depth);
+#endif
             }
             int index = j * image_width + i;
 
@@ -214,12 +245,14 @@ int main(int argc, char *argv[])
     point3 lookat;
     double aperture = 0.0;
     double vfov = 40.0;
+    color background(0, 0, 0);
     
     hittable_list world;
     switch (opts.scene)
     {
     case 0:
         world = random_scene();
+        background = color(0.7, 0.8, 1.0);
         lookfrom = point3(13, 2, 3);
         lookat = point3(0, 0, 0);
         vfov = 20;
@@ -228,6 +261,7 @@ int main(int argc, char *argv[])
     
     case 1:
         world = three_spheres();
+        background = color(0.7, 0.8, 1.0);
         lookfrom = point3(0, 1, 1);
         lookat = point3(0, 0, 0);
         vfov = 20;
@@ -237,6 +271,7 @@ int main(int argc, char *argv[])
         std::cout << "Specified non-existent scene. Using scene 2." << std::endl;
     case 2:
         world = two_spheres();
+        background = color(0.7, 0.8, 1.0);
         lookfrom = point3(13, 2, 3);
         lookat = point3(0, 0, 0);
         vfov = 20;
@@ -244,6 +279,7 @@ int main(int argc, char *argv[])
 
     case 3:
         world = two_perlin_spheres();
+        background = color(0.7, 0.8, 1.0);
         lookfrom = point3(13, 2, 3);
         lookat = point3(0, 0, 0);
         vfov = 20;
@@ -251,6 +287,7 @@ int main(int argc, char *argv[])
 
     case 4:
         world = earth();
+        background = color(0.7, 0.8, 1.0);
         lookfrom = point3(13, 2, 3);
         lookat = point3(0, 0, 0);
         vfov = 20;
@@ -274,7 +311,7 @@ int main(int argc, char *argv[])
     std::vector<std::thread> threads;
     std::vector<std::vector<color>> data_arrays = std::vector<std::vector<color>>(opts.cores, std::vector<color>(total));
     for (int i = 0; i < opts.cores; i++) {
-        threads.push_back(std::thread(render, opts.seed + i, image_height, image_width, samples_per_thread, &cam, &world, max_depth, total, &alive_count, &finished_pixel_parts, &(data_arrays[i])));
+        threads.push_back(std::thread(render, opts.seed + i, image_height, image_width, samples_per_thread, &cam, &world, &background, max_depth, total, &alive_count, &finished_pixel_parts, &(data_arrays[i])));
     }
     
     float progress = 0.f;
