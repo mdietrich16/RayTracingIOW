@@ -9,6 +9,7 @@
 
 #include "rtweekend.h"
 #include "sphere.h"
+#include "aarect.h"
 #include "moving_sphere.h"
 #include "hittable_list.h"
 #include "bvh.h"
@@ -172,6 +173,19 @@ hittable_list earth() {
     return hittable_list(globe);
 }
 
+hittable_list simplee_light() {
+    hittable_list objects;
+
+    auto pertext = make_shared<noise_texture>(4);
+    objects.add(make_shared<sphere>(point3(0, -1000, 0), 1000, make_shared<lambertian>(pertext)));
+    objects.add(make_shared<sphere>(point3(0, 2, 0), 2, make_shared<lambertian>(pertext)));
+
+    auto difflight = make_shared<diffuse_light>(color(4, 4, 4));
+    objects.add(make_shared<xy_rect>(3, 4, 1, 3, -2, difflight));
+
+    return objects;
+}
+
 void render(int seed, int image_height, int image_width, int samples, camera *cam, hittable_list *world, const color* background, int max_depth, int total, std::atomic<int>* alive_count, std::atomic<int>* finished_pixel_parts,  std::vector<color>* image_data) {
     
     (*alive_count)++;
@@ -290,6 +304,14 @@ int main(int argc, char *argv[])
         background = color(0.7, 0.8, 1.0);
         lookfrom = point3(13, 2, 3);
         lookat = point3(0, 0, 0);
+        vfov = 20;
+        break;
+
+    case 5:
+        world = simplee_light();
+        background = color(0, 0, 0);
+        lookfrom = point3(26, 3, 6);
+        lookat = point3(0, 2, 0);
         vfov = 20;
         break;
     }
