@@ -291,8 +291,8 @@ int main(int argc, char *argv[])
     const int elapsed_sec = std::chrono::duration_cast<std::chrono::seconds>(elapsed).count();
     std::cout << std::endl << "Done. Took " << elapsed_sec << " seconds." << std::endl;
     std::cout << "That means:" << std::endl;
-    std::cout << std::scientific << std::setprecision(2) << float(total*real_samples)/elapsed_sec << " rays/sec" << std::endl;
-    std::cout << std::scientific << std::setprecision(2) << (elapsed_sec)/(total*real_samples) << " sec/ray" << std::endl;
+    std::cout << "\t-" << std::scientific << std::setprecision(2) << float(total*real_samples)/elapsed_sec << " rays/sec" << std::endl;
+    std::cout << "\t-" << std::scientific << std::setprecision(2) << (elapsed_sec)/(total) << " sec/pixel" << std::endl;
 
     delete[] image_data;
     return 0;
