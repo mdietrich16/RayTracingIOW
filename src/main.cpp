@@ -173,7 +173,7 @@ hittable_list earth() {
     return hittable_list(globe);
 }
 
-hittable_list simplee_light() {
+hittable_list simple_light() {
     hittable_list objects;
 
     auto pertext = make_shared<noise_texture>(4);
@@ -182,6 +182,24 @@ hittable_list simplee_light() {
 
     auto difflight = make_shared<diffuse_light>(color(4, 4, 4));
     objects.add(make_shared<xy_rect>(3, 4, 1, 3, -2, difflight));
+
+    return objects;
+}
+
+hittable_list cornell_box() {
+    hittable_list objects;
+
+    auto red = make_shared<lambertian>(color(.65, .05, .05));
+    auto white = make_shared<lambertian>(color(.73, .73, .73));
+    auto green = make_shared<lambertian>(color(.12, .45, .15));
+    auto light = make_shared<diffuse_light>(color(15, 15, 15));
+
+    objects.add(make_shared<yz_rect>(0, 555, 0, 555, 555, green));
+    objects.add(make_shared<yz_rect>(0, 555, 0, 555, 0, red));
+    objects.add(make_shared<xz_rect>(213, 343, 227, 332, 554, light));
+    objects.add(make_shared<xz_rect>(0, 555, 0, 555, 0, white));
+    objects.add(make_shared<xz_rect>(0, 555, 0, 555, 555, white));
+    objects.add(make_shared<xy_rect>(0, 555, 0, 555, 555, white));
 
     return objects;
 }
@@ -308,11 +326,19 @@ int main(int argc, char *argv[])
         break;
 
     case 5:
-        world = simplee_light();
+        world = simple_light();
         background = color(0, 0, 0);
         lookfrom = point3(26, 3, 6);
         lookat = point3(0, 2, 0);
         vfov = 20;
+        break;
+
+    case 6:
+        world = cornell_box();
+        background = color(0, 0, 0);
+        lookfrom = point3(278, 278, -800);
+        lookat = point3(278, 278, 0);
+        vfov = 40;
         break;
     }
 
@@ -365,8 +391,8 @@ int main(int argc, char *argv[])
     const int elapsed_sec = std::chrono::duration_cast<std::chrono::seconds>(elapsed).count();
     std::cout << std::endl << "Done. Took " << elapsed_sec << " seconds." << std::endl;
     std::cout << "That means:" << std::endl;
-    std::cout << "\t-" << std::scientific << std::setprecision(2) << float(total*real_samples)/elapsed_sec << " rays/sec" << std::endl;
-    std::cout << "\t-" << std::scientific << std::setprecision(2) << (elapsed_sec)/(total) << " sec/pixel" << std::endl;
+    std::cout << "\t-> " << std::scientific << std::setprecision(2) << float(total*real_samples)/elapsed_sec << " rays/sec" << std::endl;
+    std::cout << "\t-> " << std::scientific << std::setprecision(2) << float(elapsed_sec)/(total) << " sec/pixel" << std::endl;
 
     delete[] image_data;
     return 0;
