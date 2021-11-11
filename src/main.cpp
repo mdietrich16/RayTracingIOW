@@ -5,7 +5,7 @@
 #include <atomic>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
+#include "external/stb_image_write.h"
 
 #include "rtweekend.h"
 #include "sphere.h"
@@ -136,6 +136,14 @@ hittable_list three_spheres() {
     return hittable_list(make_shared<bvh_node>(world, 0.0, 1.0));
 }
 
+hittable_list earth() {
+    auto earth_texture = make_shared<image_texture>("assets/earthmap.jpg");
+    auto earth_surface = make_shared<lambertian>(earth_texture);
+    auto globe = make_shared<sphere>(point3(0, 0, 0), 2, earth_surface);
+
+    return hittable_list(globe);
+}
+
 void render(int seed, int image_height, int image_width, int samples, camera *cam, hittable_list *world, int max_depth, int total, std::atomic<int>* alive_count, std::atomic<int>* finished_pixel_parts,  std::vector<color>* image_data) {
     
     (*alive_count)++;
@@ -175,7 +183,7 @@ int main(int argc, char *argv[])
         std::cout << "Error while parsing arguments!" << std::endl;
         return 1;
     }
-    
+
     if (!opts.render) {
         std::cout << "Not rendering!" << std::endl;
         return 0;
@@ -240,6 +248,13 @@ int main(int argc, char *argv[])
         lookat = point3(0, 0, 0);
         vfov = 20;
         break;
+
+    case 4:
+        world = earth();
+        lookfrom = point3(13, 2, 3);
+        lookat = point3(0, 0, 0);
+        vfov = 20;
+        break;
     }
 
     // Camera
@@ -255,7 +270,7 @@ int main(int argc, char *argv[])
     std::atomic<int> alive_count = 0;
 
     // Create threads
-
+    
     std::vector<std::thread> threads;
     std::vector<std::vector<color>> data_arrays = std::vector<std::vector<color>>(opts.cores, std::vector<color>(total));
     for (int i = 0; i < opts.cores; i++) {
