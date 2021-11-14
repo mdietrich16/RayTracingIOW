@@ -133,7 +133,7 @@ bool rotate_y::hit(const ray& r, double t_min, double t_max, hit_record& rec) co
     p[2] = -cos_theta*rec.p[0] + sin_theta*rec.p[2];
     
     normal[0] =  cos_theta*rec.normal[0] + sin_theta*rec.normal[2];
-    normal[2] = -cos_theta*rec.normal[0] + sin_theta*rec.normal[2];
+    normal[2] = -sin_theta*rec.normal[0] + cos_theta*rec.normal[2];
     
     rec.p = p;
     rec.set_face_normal(rotated_r, normal);
