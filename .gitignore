@@ -4,3 +4,5 @@ bin/*
 *.json
 *.jpg
 *.bmp
+*.png
+!/assets/*.jpg
